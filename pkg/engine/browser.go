@@ -24,7 +24,7 @@ func init() {
 
 }
 
-func InitBrowser(chromiumPath string, incognito bool, extraHeaders map[string]interface{}, proxy string, noHeadless bool) *Browser {
+func InitBrowser(chromiumPath string, incognito bool, extraHeaders map[string]interface{}, proxy string, noHeadless bool, useMockKeychain bool, userDataDir string, profileDir string) *Browser {
 	var bro Browser
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 
@@ -54,6 +54,12 @@ func InitBrowser(chromiumPath string, incognito bool, extraHeaders map[string]in
 		chromedp.Flag("disable-webgl", true),
 
 		chromedp.Flag("disable-popup-blocking", true),
+
+		chromedp.Flag("use-mock-keychain", useMockKeychain),
+
+		chromedp.Flag("user-data-dir", userDataDir),
+		chromedp.Flag("profile-directory", profileDir),
+		chromedp.Flag("new-window", ""),
 
 		chromedp.WindowSize(1920, 1080),
 	)

@@ -146,7 +146,7 @@ func NewCrawlerTask(targets []*model.Request, taskConf TaskConfig) (*CrawlerTask
 		}
 	}
 
-	crawlerTask.Browser = engine2.InitBrowser(taskConf.ChromiumPath, taskConf.IncognitoContext, taskConf.ExtraHeaders, taskConf.Proxy, taskConf.NoHeadless)
+	crawlerTask.Browser = engine2.InitBrowser(taskConf.ChromiumPath, taskConf.IncognitoContext, taskConf.ExtraHeaders, taskConf.Proxy, taskConf.NoHeadless, taskConf.UseMockKeychain, taskConf.UserDataDir, taskConf.ProfileDir)
 	crawlerTask.RootDomain = targets[0].URL.RootDomain()
 
 	crawlerTask.smartFilter.Init()
