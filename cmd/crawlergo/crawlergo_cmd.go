@@ -243,8 +243,26 @@ func main() {
 			&cli.BoolFlag{
 				Name:        "no-headless",
 				Value:       false,
-				Usage:       "no headless mode",
+				Usage:       "no headless mode. Set to true together with setting use-mock-keychain to false to reuse sessions",
 				Destination: &taskConfig.NoHeadless,
+			},
+			&cli.BoolFlag{
+				Name:        "use-mock-keychain",
+				Value:       false,
+				Usage:       "Use mock keychain on Mac to prevent blocking permissions dialogs. Set to false together with true to no-headless to reuse seessions. https://github.com/GoogleChrome/chrome-launcher/blob/master/docs/chrome-flags-for-tools.md",
+				Destination: &taskConfig.UseMockKeychain,
+			},
+			&cli.StringFlag{
+				Name:        "user-data-dir",
+				Value:       "",
+				Usage:       "Set to the absolute root user path of Chrome data, eg /Users/potato/Library/Application Support/Google. Setting to empty string will cause a security issue and Chrome will not use the default folder",
+				Destination: &taskConfig.UserDataDir,
+			},
+			&cli.StringFlag{
+				Name:        "profile-directory",
+				Value:       "default",
+				Usage:       "Set to the desired profile. Default is `default`",
+				Destination: &taskConfig.ProfileDir,
 			},
 		},
 		Action: run,
@@ -306,6 +324,9 @@ func run(c *cli.Context) error {
 	if err != nil {
 		logger.Logger.Fatal(err)
 	}
+
+	logger.Logger.Info("Printing out arguments fed to Chrome")
+	logger.Logger.Infof("%+v\n", taskConfig)
 
 	// 开始爬虫任务
 	task, err := pkg.NewCrawlerTask(targets, taskConfig)

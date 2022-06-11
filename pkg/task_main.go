@@ -43,6 +43,7 @@ type TaskConfig struct {
 	SubDomainReturn         bool // 子域名收集
 	IncognitoContext        bool // 开启隐身模式
 	NoHeadless              bool // headless模式
+	UseMockKeychain         bool
 	DomContentLoadedTimeout time.Duration
 	TabRunTimeout           time.Duration     // 单个标签页超时
 	PathByFuzz              bool              // 通过字典进行Path Fuzz
@@ -58,6 +59,8 @@ type TaskConfig struct {
 	Proxy                   string            // 请求代理
 	CustomFormValues        map[string]string // 自定义表单填充参数
 	CustomFormKeywordValues map[string]string // 自定义表单关键词填充内容
+	UserDataDir             string
+	ProfileDir              string
 }
 
 type tabTask struct {
