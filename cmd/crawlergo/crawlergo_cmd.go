@@ -73,11 +73,11 @@ func main() {
 	customFormKeywordValues = cli.NewStringSlice()
 
 	app := &cli.App{
-		Name:        "crawlergo",
-		Usage:       "A powerful browser crawler for web vulnerability scanners",
-		UsageText:   "crawlergo [global options] url1 url2 url3 ... (must be same host)",
-		Version:     "v0.4.2",
-		Authors:     []*cli.Author{&author},
+		Name:      "crawlergo",
+		Usage:     "A powerful browser crawler for web vulnerability scanners",
+		UsageText: "crawlergo [global options] url1 url2 url3 ... (must be same host)",
+		Version:   "v0.4.2",
+		Authors:   []*cli.Author{&author},
 		Flags: []cli.Flag{
 			&cli.PathFlag{
 				Name:        "chromium-path",
@@ -128,7 +128,7 @@ func main() {
 			&cli.BoolFlag{
 				Name:        "incognito-context",
 				Aliases:     []string{"i"},
-				Value:       true,
+				Value:       false,
 				Usage:       "whether the browser is launched in incognito mode.",
 				Destination: &taskConfig.IncognitoContext,
 			},
