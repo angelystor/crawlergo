@@ -78,6 +78,7 @@ func NewTab(browser *Browser, navigateReq model2.Request, config TabConfig) *Tab
 		navigateReq.Headers[key] = value
 		if key != "Host" {
 			tab.ExtraHeaders[key] = value
+			logger.Logger.Debug("Copying ", key, value, " to tab")
 		}
 	}
 	// follow the same model as ExtraHeaders and copy request.cookies to tab
@@ -192,7 +193,7 @@ func waitNavigateDone(ctx context.Context) error {
 
 func SetCookie(name, value, domain, path string, httpOnly, secure bool) chromedp.Action {
 	return chromedp.ActionFunc(func(ctx context.Context) error {
-		fmt.Println("Setting cookie: ", name, " ", value, " ", domain)
+		logger.Logger.Debug("Setting cookie: ", name, " ", value, " ", domain)
 		expr := cdp.TimeSinceEpoch(time.Now().Add(180 * 24 * time.Hour))
 		err := network.SetCookie(name, value).
 			WithExpires(&expr).
@@ -213,7 +214,8 @@ func SetCookie(name, value, domain, path string, httpOnly, secure bool) chromedp
 func SetCookiesFromRequest(cookies []model2.Cookie) chromedp.Action {
 	return chromedp.ActionFunc(func(ctx context.Context) error {
 		for _, cookie := range cookies {
-			//fmt.Println("POTATO ", i, " ", cookie.Name, " ", cookie.Value, " D: |", cookie.Domain, "| P:", cookie.Path)
+			logger.Logger.Info("SetCookiesFromRequest: ", cookie.Name, " ", cookie.Value, " ", cookie.Domain)
+
 			expr := cdp.TimeSinceEpoch(time.Now().Add(180 * 24 * time.Hour))
 
 			err := network.SetCookie(cookie.Name, cookie.Value).
