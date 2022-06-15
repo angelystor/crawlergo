@@ -341,20 +341,20 @@ func ReadRequestText(filename string, url *model2.URL) model2.Request {
 
 		options.Cookies = storedCookies
 	}
-	marshalledHeaders := make(map[string]interface{})
-
-	// nubby conversion over to make value and "any" type
-	// TODO should refactor this to make it better
-	for key, element := range headers {
-		marshalledHeaders[key] = element
-		println(marshalledHeaders[key], ": ", key, " ?? ", element)
-	}
-	for key, element := range marshalledHeaders {
-		println(key, ": ", element)
-	}
 
 	options.Headers = make(map[string]interface{})
-	//options.Headers = marshalledHeaders
+	taskConfig.ExtraHeaders = make(map[string]interface{})
+
+	for key, element := range headers {
+		// FIXME somehow we cannot copy the Te header over, it cannot crawl if we do so
+		if key != "Host" && key != "Cookie" && key != "Te" {
+			options.Headers[key] = element
+			taskConfig.ExtraHeaders[key] = element
+		}
+	}
+	//options.Headers = map[string]interface{}{"Cookie": "", "User-Agent": "testing 123"}
+
+	PrintMap(options.Headers)
 
 	req := model2.GetRequest(lineData[0], url, options)
 
@@ -395,7 +395,9 @@ func run(c *cli.Context) error {
 		}
 
 		if requestFile != "" {
-			logger.Logger.Info("Reading ", requestFile, " to populate header and cookie data. Ignoring header data in CLI")
+			logger.Logger.Info("Reading ", requestFile, " to populate header and cookie data. Ignoring header data in CLI. Note that this will set --custom-headers and --postdata to empty")
+			taskConfig.ExtraHeadersString = ""
+			postData = ""
 			req = ReadRequestText(requestFile, url)
 			//req = model2.GetRequest(config.GET, url, getOption())
 		} else {
