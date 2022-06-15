@@ -313,18 +313,24 @@ func ReadRequestText(filename string, url *model2.URL) model2.Request {
 	if scanner.Scan() {
 		postData = scanner.Text()
 	}
-	/*
-		url, err := model2.GetUrl(headers["Host"] + lineData[1])
-		if err != nil {
-			logger.Logger.Error("parse url failed, ", err)
-		}*/
 
 	var options model2.Options
 	if postData != "" {
 		options.PostData = postData
 	}
 	if value, ok := headers["Cookie"]; ok {
-		domain := strings.TrimSpace(headers["Host"])
+		_domain := strings.TrimSpace(headers["Host"])
+
+		// HACK: just add http:// in front so we can parse it. Doesn't matter whether it's https or http cos
+		// we just want the root domain
+		url, err := model2.GetUrl("http://" + _domain)
+		if err != nil {
+			logger.Logger.Error("parse url failed, ", err)
+		}
+
+		// add a . in front so cookies will be for *.rootdomain.xxx
+		domain := "." + url.RootDomain()
+
 		// split up cookies by ;
 		cookies := strings.Split(value, ";")
 		storedCookies := make([]model2.Cookie, len(cookies))
