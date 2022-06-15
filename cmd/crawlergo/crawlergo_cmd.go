@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"crawlergo/pkg"
 	"crawlergo/pkg/config"
 	"crawlergo/pkg/logger"
@@ -10,14 +11,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/panjf2000/ants/v2"
-	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
 	"log"
 	"os"
 	"os/signal"
 	"strings"
 	"sync"
+
+	"github.com/panjf2000/ants/v2"
+	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli/v2"
 )
 
 /**
@@ -61,6 +63,7 @@ var pushProxyPoolMax int
 var pushProxyWG sync.WaitGroup
 var outputJsonPath string
 var logLevel string
+var requestFile string
 
 func main() {
 	author := cli.Author{
@@ -264,6 +267,12 @@ func main() {
 				Usage:       "Set to the desired profile. Default is `default`",
 				Destination: &taskConfig.ProfileDir,
 			},
+			&cli.StringFlag{
+				Name:        "request-file",
+				Value:       "",
+				Usage:       "",
+				Destination: &requestFile,
+			},
 		},
 		Action: run,
 	}
@@ -272,6 +281,84 @@ func main() {
 	if err != nil {
 		logger.Logger.Fatal(err)
 	}
+}
+
+func ReadRequestText(filename string, url *model2.URL) model2.Request {
+	file, err := os.Open(filename)
+	if err != nil {
+		logger.Logger.Fatal(err)
+	}
+
+	defer file.Close()
+
+	var headers = make(map[string]string)
+
+	// this scanner can only read up to 65k, but request files shouldn't be that big
+	scanner := bufio.NewScanner(file)
+	// read first line of file
+	scanner.Scan()
+	// split it into METHOD ENDPOINT HTTP
+	lineData := strings.Split(scanner.Text(), " ")
+
+	for scanner.Scan() {
+		header, value, found := strings.Cut(scanner.Text(), ":")
+
+		if !found {
+			// end of headers, look for post data
+			break
+		}
+		headers[header] = value
+	}
+	var postData = ""
+	if scanner.Scan() {
+		postData = scanner.Text()
+	}
+	/*
+		url, err := model2.GetUrl(headers["Host"] + lineData[1])
+		if err != nil {
+			logger.Logger.Error("parse url failed, ", err)
+		}*/
+
+	var options model2.Options
+	if postData != "" {
+		options.PostData = postData
+	}
+	if value, ok := headers["Cookie"]; ok {
+		domain := strings.TrimSpace(headers["Host"])
+		// split up cookies by ;
+		cookies := strings.Split(value, ";")
+		storedCookies := make([]model2.Cookie, len(cookies))
+
+		for i := 0; i < len(cookies); i++ {
+			aCookie := strings.Split(cookies[i], "=")
+			name := strings.TrimSpace(aCookie[0])
+			value := strings.TrimSpace(aCookie[1])
+
+			logger.Logger.Debug("Adding cookie: ", name, "::", value, " to ", domain)
+
+			storedCookies[i] = model2.Cookie{Name: name, Value: value, Domain: domain, Path: "/"}
+		}
+
+		options.Cookies = storedCookies
+	}
+	marshalledHeaders := make(map[string]interface{})
+
+	// nubby conversion over to make value and "any" type
+	// TODO should refactor this to make it better
+	for key, element := range headers {
+		marshalledHeaders[key] = element
+		println(marshalledHeaders[key], ": ", key, " ?? ", element)
+	}
+	for key, element := range marshalledHeaders {
+		println(key, ": ", element)
+	}
+
+	options.Headers = make(map[string]interface{})
+	//options.Headers = marshalledHeaders
+
+	req := model2.GetRequest(lineData[0], url, options)
+
+	return req
 }
 
 func run(c *cli.Context) error {
@@ -298,10 +385,17 @@ func run(c *cli.Context) error {
 			logger.Logger.Error("parse url failed, ", err)
 			continue
 		}
-		if postData != "" {
-			req = model2.GetRequest(config.POST, url, getOption())
+
+		if requestFile != "" {
+			logger.Logger.Info("Reading ", requestFile, " to populate header and cookie data. Ignoring header data in CLI")
+			req = ReadRequestText(requestFile, url)
+			//req = model2.GetRequest(config.GET, url, getOption())
 		} else {
-			req = model2.GetRequest(config.GET, url, getOption())
+			if postData != "" {
+				req = model2.GetRequest(config.POST, url, getOption())
+			} else {
+				req = model2.GetRequest(config.GET, url, getOption())
+			}
 		}
 		req.Proxy = taskConfig.Proxy
 		targets = append(targets, &req)
@@ -386,6 +480,11 @@ func getOption() model2.Options {
 		}
 		option.Headers = taskConfig.ExtraHeaders
 	}
+
+	for key, element := range option.Headers {
+		println(key, ": ", element)
+	}
+
 	return option
 }
 
