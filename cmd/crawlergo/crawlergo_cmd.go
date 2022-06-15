@@ -361,6 +361,14 @@ func ReadRequestText(filename string, url *model2.URL) model2.Request {
 	return req
 }
 
+func PrintMap(data map[string]interface{}) {
+	logger.Logger.Debug("PrintMap")
+	for key, element := range data {
+		logger.Logger.Debug(key, ": ", element)
+	}
+
+}
+
 func run(c *cli.Context) error {
 	signalChan = make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
