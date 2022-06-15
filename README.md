@@ -159,6 +159,7 @@ https://intoli.com/blog/not-possible-to-block-chrome-headless/chrome-headless-te
 ### Basic parameters
 * `--custom-headers Headers`   Customize the HTTP header. Please pass in the data after JSON serialization, this is globally defined and will be used for all requests. (Default: null)
 * `--post-data PostData, -d PostData`   POST data. (Default: null)
+* `--request-file file path`   Request file as saved from Burp. Crawler will parse the file and use its contents for cookies and for HTTP headers. Note that using this argument will overwrite whatever value there is in custom-headers and post-data. (Default: null)
 * `--max-crawled-count Number, -m Number`    The maximum number of tasks for crawlers to avoid long crawling time due to pseudo-static. (Default: 200)
 * `--filter-mode Mode, -f Mode`   Filtering mode, `simple`: only static resources and duplicate requests are filtered.  `smart`: with the ability to filter pseudo-static. `strict`: stricter pseudo-static filtering rules. (Default: smart)
 * `--output-mode value, -o value`   Result output mode, `console`: print the glorified results directly to the screen. `json`: print the json serialized string of all results.  `none`: don't print the output. (Default: console)
