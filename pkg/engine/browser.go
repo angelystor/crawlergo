@@ -55,6 +55,8 @@ func InitBrowser(chromiumPath string, incognito bool, extraHeaders map[string]in
 
 		chromedp.Flag("disable-popup-blocking", true),
 
+		chromedp.Flag("ignore-certificate-errors", true),
+
 		chromedp.Flag("use-mock-keychain", useMockKeychain),
 
 		chromedp.Flag("user-data-dir", userDataDir),
