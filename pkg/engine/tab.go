@@ -27,6 +27,7 @@ type Tab struct {
 	Cancel           context.CancelFunc
 	NavigateReq      model2.Request
 	ExtraHeaders     map[string]interface{}
+	Cookies          []model2.Cookie
 	ResultList       []*model2.Request
 	TopFrameId       string
 	LoaderID         string
@@ -79,6 +80,10 @@ func NewTab(browser *Browser, navigateReq model2.Request, config TabConfig) *Tab
 			tab.ExtraHeaders[key] = value
 		}
 	}
+	// follow the same model as ExtraHeaders and copy request.cookies to tab
+	tab.Cookies = make([]model2.Cookie, len(navigateReq.Cookies))
+	copy(tab.Cookies, navigateReq.Cookies)
+
 	tab.NavigateReq = navigateReq
 	tab.config = config
 	tab.NavDone = make(chan int)
@@ -185,9 +190,54 @@ func waitNavigateDone(ctx context.Context) error {
 	}
 }
 
+func SetCookie(name, value, domain, path string, httpOnly, secure bool) chromedp.Action {
+	return chromedp.ActionFunc(func(ctx context.Context) error {
+		fmt.Println("Setting cookie: ", name, " ", value, " ", domain)
+		expr := cdp.TimeSinceEpoch(time.Now().Add(180 * 24 * time.Hour))
+		err := network.SetCookie(name, value).
+			WithExpires(&expr).
+			WithDomain(domain).
+			WithPath(path).
+			WithHTTPOnly(httpOnly).
+			WithSecure(secure).
+			Do(ctx)
+
+		if err != nil {
+			logger.Logger.Warn("Error in setting cookies: ", err, " Cookie: ", name, ":", value)
+			return err
+		}
+		return nil
+	})
+}
+
+func SetCookiesFromRequest(cookies []model2.Cookie) chromedp.Action {
+	return chromedp.ActionFunc(func(ctx context.Context) error {
+		for _, cookie := range cookies {
+			//fmt.Println("POTATO ", i, " ", cookie.Name, " ", cookie.Value, " D: |", cookie.Domain, "| P:", cookie.Path)
+			expr := cdp.TimeSinceEpoch(time.Now().Add(180 * 24 * time.Hour))
+
+			err := network.SetCookie(cookie.Name, cookie.Value).
+				WithExpires(&expr).
+				WithDomain(cookie.Domain).
+				WithPath(cookie.Path).
+				WithHTTPOnly(true).
+				WithSecure(true).
+				Do(ctx)
+
+			if err != nil {
+				logger.Logger.Warn("Error in setting cookies: ", err, " Cookie: ", cookie.Name, ":", cookie.Value, ":", cookie.Domain, ":", cookie.Path)
+				return err
+			}
+
+		}
+		return nil
+	})
+}
+
 func (tab *Tab) Start() {
 	logger.Logger.Info("Crawling " + tab.NavigateReq.Method + " " + tab.NavigateReq.URL.String())
 	defer tab.Cancel()
+
 	if err := chromedp.Run(*tab.Ctx,
 		RunWithTimeOut(tab.Ctx, tab.config.DomContentLoadedTimeout, chromedp.Tasks{
 			//
@@ -210,6 +260,8 @@ func (tab *Tab) Start() {
 				return nil
 			}),
 			network.SetExtraHTTPHeaders(tab.ExtraHeaders),
+			SetCookiesFromRequest(tab.Cookies),
+
 			// 执行导航
 			//chromedp.Navigate(tab.NavigateReq.URL.String()),
 			chromedp.ActionFunc(func(ctx context.Context) error {

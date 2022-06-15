@@ -21,9 +21,17 @@ type Filter struct {
 	UniqueId          string
 }
 
+type Cookie struct {
+	Name   string
+	Value  string
+	Domain string
+	Path   string
+}
+
 type Options struct {
 	Headers  map[string]interface{}
 	PostData string
+	Cookies  []Cookie
 }
 
 type Request struct {
@@ -35,6 +43,7 @@ type Request struct {
 	Source          string
 	RedirectionFlag bool
 	Proxy           string
+	Cookies         []Cookie
 }
 
 var supportContentType = []string{config.JSON, config.URLENCODED}
@@ -55,6 +64,10 @@ func GetRequest(method string, URL *URL, options ...Options) Request {
 
 		if option.PostData != "" {
 			req.PostData = option.PostData
+		}
+
+		if option.Cookies != nil {
+			req.Cookies = option.Cookies
 		}
 	} else {
 		req.Headers = map[string]interface{}{}
